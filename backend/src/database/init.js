@@ -36,5 +36,5 @@ if (!existing) {
   console.log('ℹ️  管理员已存在，跳过创建');
 }
 
-db.close();
 console.log('✅ 数据库初始化完成');
+db.close();

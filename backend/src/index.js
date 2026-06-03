@@ -1,4 +1,12 @@
 require('dotenv').config();
+
+// 启动时初始化数据库
+try {
+  require('./database/init');
+} catch(e) {
+  console.log('DB init:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
