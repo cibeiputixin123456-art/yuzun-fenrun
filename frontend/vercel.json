@@ -1,14 +1,3 @@
 {
-  "rewrites": [{"source": "/(.*)", "destination": "/index.html"}],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src *; object-src 'none';"
-        }
-      ]
-    }
-  ]
+  "rewrites": [{"source": "/(.*)", "destination": "/index.html"}]
 }
