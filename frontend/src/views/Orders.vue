@@ -10,6 +10,7 @@
           <el-radio-group v-model="form.order_type" class="type-group">
             <el-radio-button value="self_order">📦 个人选购</el-radio-button>
             <el-radio-button value="customer_sale">🛒 客户服务</el-radio-button>
+            <el-radio-button value="repurchase">🔄 复购（7.5折）</el-radio-button>
             <el-radio-button value="upgrade" v-if="user.level === 'xinxiang'">⬆️ 身份升级</el-radio-button>
           </el-radio-group>
         </el-form-item>
@@ -22,8 +23,9 @@
             size="large"
             style="width:100%"
           />
-          <div class="field-tip" v-if="form.order_type === 'upgrade'">身份升级固定4盒，合计 ¥{{ (4 * 698).toLocaleString() }}</div>
-          <div class="field-tip" v-else>每盒 ¥698，合计 ¥{{ (form.quantity * 698).toLocaleString() }}</div>
+          <div class="field-tip" v-if="form.order_type === 'upgrade'">身份升级固定4盒，合计 ¥{{ (4 * 826).toLocaleString() }}</div>
+          <div class="field-tip" v-else-if="form.order_type === 'repurchase'">复购7.5折，每盒 ¥619.5，合计 ¥{{ (form.quantity * 619.5).toLocaleString() }}，不计入分润</div>
+          <div class="field-tip" v-else>每盒 ¥826，合计 ¥{{ (form.quantity * 826).toLocaleString() }}</div>
         </el-form-item>
         <el-form-item label="客户姓名（选填）" v-if="form.order_type !== 'self_order'">
           <el-input v-model="form.buyer_name" placeholder="客户姓名或备注" />
@@ -103,12 +105,14 @@ const TYPE_LABELS = {
   self_order: '个人选购',
   customer_sale: '客户服务',
   upgrade: '身份升级',
+  repurchase: '复购',
 }
 
 function typeLabel(t) { return TYPE_LABELS[t] || t }
 function typeTagType(t) {
   if (t === 'customer_sale') return 'success'
   if (t === 'upgrade') return 'warning'
+  if (t === 'repurchase') return 'danger'
   return 'info'
 }
 

@@ -91,7 +91,7 @@ router.post('/', authMiddleware, (req, res) => {
 
   if (!quantity || quantity < 1) return res.status(400).json({ error: '数量不合法' });
   if (!order_type) return res.status(400).json({ error: '订单类型不能为空' });
-  if (!['self_order', 'customer_sale', 'upgrade'].includes(order_type)) {
+  if (!['self_order', 'customer_sale', 'upgrade', 'repurchase'].includes(order_type)) {
     return res.status(400).json({ error: '订单类型无效' });
   }
 
@@ -113,7 +113,9 @@ router.post('/', authMiddleware, (req, res) => {
     return res.status(400).json({ error: '普通会员不能进行销售分润，请先购买产品成为星享体验官' });
   }
 
-  const totalAmount = quantity * UNIT_PRICE;
+  // 复购7.5折，不计算佣金
+  const unitPrice = order_type === 'repurchase' ? Math.round(UNIT_PRICE * 0.75 * 100) / 100 : UNIT_PRICE;
+  const totalAmount = quantity * unitPrice;
   const { level1, level2 } = getAncestors(seller.id);
 
   // 开启事务
@@ -122,12 +124,12 @@ router.post('/', authMiddleware, (req, res) => {
     const orderResult = db.prepare(`
       INSERT INTO orders (seller_id, buyer_name, quantity, unit_price, total_amount, order_type, note)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(seller.id, buyer_name || null, quantity, UNIT_PRICE, totalAmount, order_type, note || null);
+    `).run(seller.id, buyer_name || null, quantity, unitPrice, totalAmount, order_type, note || null);
 
     const orderId = orderResult.lastInsertRowid;
 
-    // 2. 计算并写入佣金
-    const commissions = calcCommissions({
+    // 2. 计算并写入佣金（复购不计算佣金）
+    const commissions = order_type === 'repurchase' ? [] : calcCommissions({
       seller: { id: seller.id, level: seller.level },
       level1,
       level2,
