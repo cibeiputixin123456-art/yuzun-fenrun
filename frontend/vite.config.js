@@ -7,10 +7,5 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000'
     }
-  },
-  define: {
-    __API_BASE__: JSON.stringify(
-      process.env.VITE_API_URL || ''
-    )
   }
 })
