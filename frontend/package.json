@@ -1,0 +1,20 @@
+{
+  "name": "yuzun-fenrun-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0",
+    "axios": "^1.6.7",
+    "element-plus": "^2.6.0",
+    "@element-plus/icons-vue": "^2.3.1"
+  },
+  "devDependencies": {
+    "vite": "^5.1.0",
+    "@vitejs/plugin-vue": "^5.0.4"
+  }
+}
