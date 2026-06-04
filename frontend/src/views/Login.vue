@@ -45,6 +45,10 @@
         </el-button>
       </el-form>
 
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:#999">
+        没有账号？<a @click="$router.push('/register')" style="color:#8B6914;cursor:pointer">立即注册</a>
+      </div>
+
       <!-- 合规声明 -->
       <div class="compliance">
         本平台所有收益均来自真实产品分享 · 严格两级服务收益 · 0元加入 · 无入门费
