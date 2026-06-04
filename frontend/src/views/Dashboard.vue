@@ -81,7 +81,14 @@ import { useRouter } from 'vue-router'
 import { api } from '../api/index.js'
 
 const router = useRouter()
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getSavedUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
+const user = ref(getSavedUser())
 
 const monthStats = ref({ selfRetail: 0, subsidy: 0, tierIncentive: 0, total: 0 })
 
@@ -169,7 +176,7 @@ async function loadMonthStats() {
 async function refreshUser() {
   try {
     // refresh from local storage (updated by server sync)
-    user.value = JSON.parse(localStorage.getItem('user') || '{}')
+    user.value = getSavedUser()
   } catch {}
 }
 
@@ -210,12 +217,13 @@ onMounted(() => {
 }
 
 .card {
-  background: #fff;
-  border: 1.5px solid var(--gold-border);
+  background: #A07820;
+  border: 1.5px solid rgba(255,255,255,0.3);
   border-radius: 14px;
   padding: 16px;
   margin-bottom: 14px;
-  box-shadow: 0 2px 8px rgba(139,105,20,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  color: #fff;
 }
 
 .identity-card {
@@ -225,18 +233,18 @@ onMounted(() => {
 .identity-level {
   font-size: 22px;
   font-weight: 700;
-  color: var(--gold);
+  color: #fff;
 }
 .identity-rank {
   font-size: 14px;
-  color: var(--gold-light);
+  color: rgba(255,255,255,0.8);
   margin-top: 6px;
 }
 
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--gold-dark);
+  color: #fff;
   margin: 4px 0 10px;
   padding-left: 2px;
 }
@@ -248,29 +256,29 @@ onMounted(() => {
   margin-bottom: 14px;
 }
 .income-item {
-  background: #fff;
-  border: 1px solid #e8e0cc;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
   border-radius: 12px;
   padding: 14px 12px;
   text-align: center;
 }
 .income-item.gold {
-  background: var(--gold-bg);
-  border-color: var(--gold-border);
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.5);
 }
 .income-label {
   font-size: 11px;
-  color: #888;
+  color: rgba(255,255,255,0.8);
   margin-bottom: 6px;
 }
 .income-val {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #fff;
 }
 .income-val.big {
   font-size: 22px;
-  color: var(--gold);
+  color: #fff;
 }
 
 .sales-card {
@@ -300,17 +308,17 @@ onMounted(() => {
 .tier-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--gold-dark);
+  color: #fff;
   margin-bottom: 8px;
 }
 .tier-current {
   font-size: 13px;
-  color: #666;
+  color: rgba(255,255,255,0.85);
   margin-bottom: 8px;
 }
 .tier-bar-wrap {
   height: 10px;
-  background: #f0e8d0;
+  background: rgba(255,255,255,0.25);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -327,11 +335,11 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 .tier-next-info b {
-  color: var(--gold);
+  color: #fff;
 }
 .tier-link {
   font-size: 12px;
-  color: var(--gold);
+  color: rgba(255,255,255,0.9);
   text-decoration: none;
 }
 
@@ -342,12 +350,12 @@ onMounted(() => {
 }
 .ti-label {
   font-size: 14px;
-  color: #555;
+  color: rgba(255,255,255,0.85);
 }
 .ti-amount {
   font-size: 22px;
   font-weight: 700;
-  color: var(--gold);
+  color: #fff;
 }
 
 .quick-ops {
@@ -369,22 +377,25 @@ onMounted(() => {
 }
 .op-btn:active { opacity: 0.8; }
 .gold-btn {
-  background: linear-gradient(135deg, #8B6914, #5C430C);
-  color: #FAF6EE;
-  box-shadow: 0 3px 10px rgba(92,67,12,0.3);
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.4);
 }
 .gray-btn {
-  background: #f0f0f0;
-  color: #555;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 .orange-btn {
-  background: linear-gradient(135deg, #e67e22, #ca6f1e);
+  background: rgba(255,255,255,0.2);
   color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
 }
 
 .compliance {
   font-size: 10px;
-  color: #bbb;
+  color: rgba(255,255,255,0.6);
   text-align: center;
   padding: 16px 8px 4px;
   line-height: 1.8;

@@ -24,9 +24,20 @@ const _origPrepare = db.prepare.bind(db);
 const origPrepare = (sql) => {
   const stmt = _origPrepare(sql);
   return {
-    run: (...params) => stmt.run(...params),
-    get: (...params) => stmt.get(...params),
-    all: (...params) => stmt.all(...params),
+    run: (...params) => {
+      if (params.length === 0) return stmt.run();
+      return stmt.run(...params);
+    },
+    get: (...params) => {
+      if (params.length === 0) return stmt.get();
+      if (params.length === 1 && Array.isArray(params[0])) return params[0].length === 0 ? stmt.get() : stmt.get(...params[0]);
+      return stmt.get(...params);
+    },
+    all: (...params) => {
+      if (params.length === 0) return stmt.all();
+      if (params.length === 1 && Array.isArray(params[0])) return params[0].length === 0 ? stmt.all() : stmt.all(...params[0]);
+      return stmt.all(...params);
+    },
   };
 };
 

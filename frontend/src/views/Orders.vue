@@ -86,7 +86,14 @@ import { api } from '../api/index.js'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getSavedUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
+const user = ref(getSavedUser())
 const submitting = ref(false)
 const loading = ref(false)
 const orders = ref([])

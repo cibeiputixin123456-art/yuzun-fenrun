@@ -44,7 +44,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { api } from '../api/index.js'
 
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getSavedUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
+const user = ref(getSavedUser())
 const userSales = ref(user.value.total_service_sales || 0)
 const earnedPerTier = ref([])
 
@@ -94,7 +101,7 @@ function calcEarned(tier, idx) {
 async function loadUser() {
   try {
     // 刷新用户最新数据（如果有profile接口）
-    const u = JSON.parse(localStorage.getItem('user') || '{}')
+    const u = getSavedUser()
     userSales.value = u.total_service_sales || 0
   } catch {}
 }

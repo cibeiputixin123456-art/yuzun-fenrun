@@ -1,9 +1,20 @@
 import { reactive } from 'vue'
 import { api } from '../api'
 
+function safeParseUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return null
+    return JSON.parse(raw)
+  } catch {
+    localStorage.removeItem('user')
+    return null
+  }
+}
+
 const state = reactive({
   token: localStorage.getItem('token') || '',
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  user: safeParseUser(),
 })
 
 export function useUserStore() {

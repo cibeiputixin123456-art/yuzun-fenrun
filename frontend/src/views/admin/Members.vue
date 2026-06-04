@@ -48,10 +48,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="openEdit(row)">编辑</el-button>
             <el-button size="small" type="warning" @click="openReset(row)">重置密码</el-button>
+            <el-button size="small" type="danger" @click="doDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -116,7 +117,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '../../api'
 
 const RANK_LABELS = {
@@ -204,6 +205,17 @@ async function doReset() {
     showReset.value = false
   } finally {
     submitting.value = false
+  }
+}
+
+async function doDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确定删除会员「${row.name}」吗？删除后不可恢复！`, '警告', { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消', confirmButtonClass: 'el-button--danger' })
+    await api.delete(`/members/${row.id}`)
+    ElMessage.success('删除成功')
+    load()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('删除失败')
   }
 }
 

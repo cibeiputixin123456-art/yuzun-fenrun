@@ -82,7 +82,14 @@ import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getSavedUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
+const user = ref(getSavedUser())
 const isMobile = ref(window.innerWidth <= 768)
 
 const LEVEL_MAP = {
@@ -114,7 +121,7 @@ async function logout() {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: #C9A84C;
 }
 
 .header {
@@ -124,12 +131,12 @@ async function logout() {
   right: 0;
   z-index: 100;
   height: 52px;
-  background: linear-gradient(135deg, #8B6914, #5C430C);
+  background: linear-gradient(135deg, #C9A84C, #A07820);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  box-shadow: 0 2px 8px rgba(92,67,12,0.3);
+  box-shadow: 0 2px 8px rgba(160,120,32,0.4);
 }
 
 .header-brand {
@@ -164,7 +171,7 @@ async function logout() {
 .sidebar {
   width: 200px;
   min-height: calc(100vh - 52px);
-  background: linear-gradient(180deg, #5C430C 0%, #3a2a08 100%);
+  background: linear-gradient(180deg, #C9A84C 0%, #A07820 100%);
   position: fixed;
   top: 52px;
   left: 0;
@@ -181,21 +188,21 @@ async function logout() {
   align-items: center;
   gap: 10px;
   padding: 12px 20px;
-  color: #D4AF5A;
+  color: #fff;
   text-decoration: none;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .nav-item:hover {
-  background: rgba(212,175,90,0.15);
-  color: #FAF6EE;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
 }
 
 .nav-item.router-link-active {
-  background: rgba(212,175,90,0.25);
-  color: #FAF6EE;
-  border-left: 3px solid #D4AF5A;
+  background: rgba(255,255,255,0.3);
+  color: #fff;
+  border-left: 3px solid #fff;
 }
 
 .nav-icon {
@@ -204,14 +211,14 @@ async function logout() {
 
 .nav-divider {
   font-size: 11px;
-  color: #8B6914;
+  color: rgba(255,255,255,0.7);
   padding: 16px 20px 6px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .admin-item {
-  color: #C9A84C;
+  color: #fff;
   font-size: 13px;
 }
 
@@ -219,6 +226,7 @@ async function logout() {
   flex: 1;
   padding: 16px;
   min-height: calc(100vh - 52px);
+  background: #C9A84C;
 }
 
 @media (min-width: 769px) {

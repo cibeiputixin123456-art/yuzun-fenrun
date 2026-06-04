@@ -39,9 +39,12 @@ router.get('/overview', authMiddleware, adminOnly, (req, res) => {
 
   const totalMembers = db.prepare(`SELECT COUNT(*) as cnt FROM members WHERE role != 'admin'`).get();
 
+  // 成本和毛利仅管理员可见，不对外暴露
   const costPerBox = 300;
   const totalCost = salesData.totalQuantity * costPerBox;
   const grossProfit = salesData.totalSales - totalCost - commData.totalComm;
+
+  const isAdmin = req.user.role === 'admin';
 
   res.json({
     period,
@@ -50,8 +53,9 @@ router.get('/overview', authMiddleware, adminOnly, (req, res) => {
     totalCommissions: commData.totalComm,
     totalTierBonus: tierData.totalTier,
     pendingAmount: pendingData.pendingAmount,
-    totalCost,
-    grossProfit,
+    // 成本和毛利只给管理员
+    totalCost: isAdmin ? totalCost : undefined,
+    grossProfit: isAdmin ? grossProfit : undefined,
     totalMembers: totalMembers.cnt,
     memberCounts: Object.fromEntries(memberCounts.map(r => [r.level, r.cnt])),
   });
