@@ -47,6 +47,9 @@
             <router-link to="/admin/import" class="nav-item admin-item">
               <span class="nav-icon">📥</span> 导入订单
             </router-link>
+            <router-link to="/admin/tree" class="nav-item admin-item">
+              <span class="nav-icon">🌳</span> 团队架构
+            </router-link>
           </template>
         </nav>
       </aside>
