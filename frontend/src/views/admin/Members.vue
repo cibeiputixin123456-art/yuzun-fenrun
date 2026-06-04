@@ -35,6 +35,9 @@
         <el-table-column label="上级" width="90">
           <template #default="{ row }">{{ row.referrer?.name || '-' }}</template>
         </el-table-column>
+        <el-table-column prop="external_id" label="外部ID" width="100">
+          <template #default="{ row }">{{ row.external_id || '-' }}</template>
+        </el-table-column>
         <el-table-column label="累计收益" width="110">
           <template #default="{ row }">¥{{ fmt(row.total_commission_earned) }}</template>
         </el-table-column>
@@ -77,6 +80,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="上级手机号"><el-input v-model="addForm.referrer_phone" placeholder="选填" /></el-form-item>
+        <el-form-item label="外部平台ID"><el-input v-model="addForm.external_id" placeholder="选填，另一平台的ID号" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAdd = false">取消</el-button>
@@ -89,6 +93,7 @@
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="姓名"><el-input v-model="editForm.name" /></el-form-item>
         <el-form-item label="微信号"><el-input v-model="editForm.wechat_id" /></el-form-item>
+        <el-form-item label="外部平台ID"><el-input v-model="editForm.external_id" placeholder="另一平台的ID号" /></el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editForm.status">
             <el-option label="正常" value="active" />
@@ -137,8 +142,8 @@ const levelFilter = ref('')
 const showAdd = ref(false)
 const showEdit = ref(false)
 const showReset = ref(false)
-const addForm = ref({ name: '', phone: '', password: '', wechat_id: '', level: 'huiyuan', referrer_phone: '' })
-const editForm = ref({ id: null, name: '', wechat_id: '', status: 'active' })
+const addForm = ref({ name: '', phone: '', password: '', wechat_id: '', level: 'huiyuan', referrer_phone: '', external_id: '' })
+const editForm = ref({ id: null, name: '', wechat_id: '', status: 'active', external_id: '' })
 const resetId = ref(null)
 const resetPwd = ref('')
 
@@ -174,7 +179,7 @@ async function doAdd() {
 }
 
 function openEdit(row) {
-  editForm.value = { id: row.id, name: row.name, wechat_id: row.wechat_id || '', status: row.status }
+  editForm.value = { id: row.id, name: row.name, wechat_id: row.wechat_id || '', status: row.status, external_id: row.external_id || '' }
   showEdit.value = true
 }
 

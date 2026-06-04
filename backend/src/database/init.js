@@ -15,6 +15,12 @@ const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   // 建表
   await db.init(schema);
 
+  // 兼容升级：如果没有 external_id 列则添加
+  try {
+    await db.prepare("ALTER TABLE members ADD COLUMN external_id TEXT").run();
+    console.log('✅ 添加 external_id 字段');
+  } catch {}
+
   // 创建管理员账号
   const adminPhone = process.env.ADMIN_PHONE || '13800000000';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123456';

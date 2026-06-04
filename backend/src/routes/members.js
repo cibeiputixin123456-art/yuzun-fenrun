@@ -47,7 +47,7 @@ router.get('/', authMiddleware, adminOnly, async (req, res) => {
 
 // 管理员：添加会员
 router.post('/', authMiddleware, adminOnly, async (req, res) => {
-  const { name, phone, password, wechat_id, level, referrer_phone } = req.body;
+  const { name, phone, password, wechat_id, level, referrer_phone, external_id } = req.body;
 
   if (!name || !phone || !password) return res.status(400).json({ error: '姓名、手机号、密码不能为空' });
   if (password.length < 6) return res.status(400).json({ error: '密码至少6位' });
@@ -66,9 +66,9 @@ router.post('/', authMiddleware, adminOnly, async (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
 
   const result = await db.prepare(`
-    INSERT INTO members (name, phone, password_hash, wechat_id, level, referrer_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(name, phone, hash, wechat_id || null, memberLevel, referrer_id);
+    INSERT INTO members (name, phone, password_hash, wechat_id, level, referrer_id, external_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(name, phone, hash, wechat_id || null, memberLevel, referrer_id, external_id || null);
 
   await db.prepare('INSERT INTO tier_progress (member_id) VALUES (?)').run(result.lastInsertRowid);
 
@@ -77,7 +77,7 @@ router.post('/', authMiddleware, adminOnly, async (req, res) => {
 
 // 管理员：修改会员信息
 router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
-  const { name, wechat_id, level, status } = req.body;
+  const { name, wechat_id, level, status, external_id } = req.body;
   const memberId = req.params.id;
 
   const member = await db.prepare('SELECT * FROM members WHERE id = ?').get(memberId);
@@ -88,9 +88,10 @@ router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
       name = COALESCE(?, name),
       wechat_id = COALESCE(?, wechat_id),
       level = COALESCE(?, level),
-      status = COALESCE(?, status)
+      status = COALESCE(?, status),
+      external_id = ?
     WHERE id = ?
-  `).run(name || null, wechat_id || null, level || null, status || null, memberId);
+  `).run(name || null, wechat_id || null, level || null, status || null, external_id !== undefined ? external_id : member.external_id, memberId);
 
   res.json({ message: '修改成功' });
 });

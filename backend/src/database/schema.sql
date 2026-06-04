@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS members (
   name TEXT NOT NULL,
   phone TEXT UNIQUE NOT NULL,
   wechat_id TEXT,
+  external_id TEXT,                            -- 外部平台ID（手动填入，用于对账）
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',        -- member / admin
   level TEXT NOT NULL DEFAULT 'huiyuan',      -- huiyuan(会员) / xinxiang(星享) / xingyao(星耀)
