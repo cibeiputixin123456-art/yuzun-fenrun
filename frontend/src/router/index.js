@@ -20,6 +20,7 @@ const routes = [
       { path: 'admin/stats', component: () => import('../views/admin/Stats.vue'), meta: { title: '数据统计', admin: true } },
       { path: 'admin/import', component: () => import('../views/admin/ImportOrders.vue'), meta: { title: '导入订单', admin: true } },
       { path: 'admin/tree', component: () => import('../views/admin/TeamTree.vue'), meta: { title: '团队架构', admin: true } },
+      { path: 'admin/ranking', component: () => import('../views/admin/Ranking.vue'), meta: { title: '业绩排行', admin: true } },
     ]
   },
 ]
