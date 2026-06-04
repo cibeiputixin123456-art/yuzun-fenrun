@@ -24,10 +24,11 @@
 
         <el-form-item>
           <el-input
-            v-model="form.referrer_id"
-            placeholder="推荐人ID（选填，由推荐人告知）"
+            v-model="form.referrer_phone"
+            placeholder="推荐人手机号（选填，由推荐人告知）"
             size="large"
             class="gold-input"
+            maxlength="11"
             @blur="lookupReferrer"
             clearable
           />
@@ -82,24 +83,24 @@ const form = ref({
   phone: '',
   password: '',
   wechat_id: '',
-  referrer_id: route.query.ref || '',  // 支持链接带推荐人ID
+  referrer_phone: route.query.ref || '',  // 支持链接带推荐人手机号
 })
 
 // 自动查询推荐人
 onMounted(() => {
-  if (form.value.referrer_id) lookupReferrer()
+  if (form.value.referrer_phone) lookupReferrer()
 })
 
 async function lookupReferrer() {
-  const id = form.value.referrer_id?.trim()
+  const phone = form.value.referrer_phone?.trim()
   referrerInfo.value = null
   referrerError.value = ''
-  if (!id) return
+  if (!phone || phone.length < 11) return
   try {
-    const res = await api.get(`/auth/referrer/${id}`)
+    const res = await api.get(`/auth/referrer-by-phone/${phone}`)
     referrerInfo.value = res.data
   } catch {
-    referrerError.value = '推荐人ID不存在，请重新确认'
+    referrerError.value = '推荐人手机号不存在，请重新确认'
   }
 }
 
@@ -116,7 +117,7 @@ async function handleRegister() {
       phone: form.value.phone,
       password: form.value.password,
       wechat_id: form.value.wechat_id,
-      referrer_id: form.value.referrer_id || null,
+      referrer_phone: form.value.referrer_phone || null,
     })
     localStorage.setItem('token', res.data.token)
     localStorage.setItem('user', JSON.stringify(res.data.user))

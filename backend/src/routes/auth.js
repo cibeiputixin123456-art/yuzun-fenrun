@@ -48,11 +48,15 @@ router.post('/register', async (req, res) => {
     const existing = await db.prepare('SELECT id FROM members WHERE phone = ?').get(phone);
     if (existing) return res.status(400).json({ error: '该手机号已注册' });
 
-    // 验证推荐人
+    // 验证推荐人（支持手机号或ID）
     let referrer = null;
-    if (referrer_id) {
+    const { referrer_phone } = req.body;
+    if (referrer_phone) {
+      referrer = await db.prepare('SELECT id, name, level FROM members WHERE phone = ?').get(referrer_phone);
+      if (!referrer) return res.status(400).json({ error: '推荐人手机号不存在，请确认后重新输入' });
+    } else if (referrer_id) {
       referrer = await db.prepare('SELECT id, name, level FROM members WHERE id = ?').get(referrer_id);
-      if (!referrer) return res.status(400).json({ error: '推荐人ID不存在，请确认后重新输入' });
+      if (!referrer) return res.status(400).json({ error: '推荐人不存在，请确认后重新输入' });
     }
 
     const hash = bcrypt.hashSync(password, 10);
@@ -80,16 +84,24 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 根据ID查询推荐人信息（注册前预览）
+// 根据ID查询推荐人信息
 router.get('/referrer/:id', async (req, res) => {
   try {
-    const m = await db.prepare('SELECT id, name, level FROM members WHERE id = ? AND role != ?').get(req.params.id, 'admin');
+    const m = await db.prepare("SELECT id, name, level FROM members WHERE id = ? AND role != 'admin'").get(req.params.id);
     if (!m) return res.status(404).json({ error: '推荐人不存在' });
     const levelLabel = { xinxiang: '星享体验官', xingyao: '星耀服务官', huiyuan: '普通会员' };
     res.json({ id: m.id, name: m.name, levelLabel: levelLabel[m.level] || m.level });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 根据手机号查询推荐人信息
+router.get('/referrer-by-phone/:phone', async (req, res) => {
+  try {
+    const m = await db.prepare("SELECT id, name, level FROM members WHERE phone = ? AND role != 'admin'").get(req.params.phone);
+    if (!m) return res.status(404).json({ error: '推荐人不存在' });
+    const levelLabel = { xinxiang: '星享体验官', xingyao: '星耀服务官', huiyuan: '普通会员' };
+    res.json({ id: m.id, name: m.name, levelLabel: levelLabel[m.level] || m.level });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 修改密码
