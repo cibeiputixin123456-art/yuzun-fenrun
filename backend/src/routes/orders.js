@@ -8,18 +8,15 @@ const router = express.Router();
 /**
  * 获取会员的level1和level2
  */
-function getAncestors(sellerId) {
-  const level1Member = db.prepare('SELECT id, level, referrer_id FROM members WHERE id = ?')
-    .get(db.prepare('SELECT referrer_id FROM members WHERE id = ?').get(sellerId)?.referrer_id);
-  
-  const seller = db.prepare('SELECT referrer_id FROM members WHERE id = ?').get(sellerId);
+async function getAncestors(sellerId) {
+  const seller = await db.prepare('SELECT referrer_id FROM members WHERE id = ?').get(sellerId);
   if (!seller || !seller.referrer_id) return { level1: null, level2: null };
 
-  const level1 = db.prepare('SELECT id, level, referrer_id FROM members WHERE id = ?').get(seller.referrer_id);
+  const level1 = await db.prepare('SELECT id, level, referrer_id FROM members WHERE id = ?').get(seller.referrer_id);
   if (!level1) return { level1: null, level2: null };
 
   const level2 = level1.referrer_id
-    ? db.prepare('SELECT id, level FROM members WHERE id = ?').get(level1.referrer_id)
+    ? await db.prepare('SELECT id, level FROM members WHERE id = ?').get(level1.referrer_id)
     : null;
 
   return { level1, level2 };
@@ -28,22 +25,21 @@ function getAncestors(sellerId) {
 /**
  * 沿上级链更新 total_service_sales，并检查阶梯激励
  */
-function updateServiceSalesChain(sellerId, amount, orderId) {
+async function updateServiceSalesChain(sellerId, amount, orderId) {
   let currentId = sellerId;
   const tierCommissions = [];
 
-  // 先更新 seller 自己的 service_sales
   while (currentId) {
-    const member = db.prepare('SELECT id, referrer_id, total_service_sales FROM members WHERE id = ?').get(currentId);
+    const member = await db.prepare('SELECT id, referrer_id, total_service_sales FROM members WHERE id = ?').get(currentId);
     if (!member) break;
 
     const oldSales = member.total_service_sales;
     const newSales = oldSales + amount;
 
-    db.prepare('UPDATE members SET total_service_sales = ? WHERE id = ?').run(newSales, member.id);
+    await db.prepare('UPDATE members SET total_service_sales = ? WHERE id = ?').run(newSales, member.id);
 
     // 检查阶梯激励
-    const progress = db.prepare('SELECT * FROM tier_progress WHERE member_id = ?').get(member.id);
+    const progress = await db.prepare('SELECT * FROM tier_progress WHERE member_id = ?').get(member.id);
     if (progress) {
       const { bonus, newRank, tierDetails } = calcTierBonus(progress.cumulative_sales, amount);
 
@@ -58,7 +54,7 @@ function updateServiceSalesChain(sellerId, amount, orderId) {
           });
         });
 
-        db.prepare(`
+        await db.prepare(`
           UPDATE tier_progress SET
             cumulative_sales = cumulative_sales + ?,
             tier_bonus_earned = tier_bonus_earned + ?,
@@ -68,9 +64,9 @@ function updateServiceSalesChain(sellerId, amount, orderId) {
         `).run(amount, bonus, newRank, member.id);
 
         // 同步更新 rank
-        db.prepare('UPDATE members SET rank = ? WHERE id = ?').run(newRank, member.id);
+        await db.prepare('UPDATE members SET rank = ? WHERE id = ?').run(newRank, member.id);
       } else {
-        db.prepare(`
+        await db.prepare(`
           UPDATE tier_progress SET
             cumulative_sales = cumulative_sales + ?,
             updated_at = datetime('now','localtime')
@@ -86,7 +82,7 @@ function updateServiceSalesChain(sellerId, amount, orderId) {
 }
 
 // 创建订单（会员自己操作）
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { quantity, buyer_name, order_type, note } = req.body;
 
   if (!quantity || quantity < 1) return res.status(400).json({ error: '数量不合法' });
@@ -95,7 +91,7 @@ router.post('/', authMiddleware, (req, res) => {
     return res.status(400).json({ error: '订单类型无效' });
   }
 
-  const seller = db.prepare('SELECT * FROM members WHERE id = ?').get(req.user.id);
+  const seller = await db.prepare('SELECT * FROM members WHERE id = ?').get(req.user.id);
   if (!seller) return res.status(404).json({ error: '账号不存在' });
 
   // 星享体验官才能升级
@@ -116,12 +112,12 @@ router.post('/', authMiddleware, (req, res) => {
   // 复购7.5折，不计算佣金
   const unitPrice = order_type === 'repurchase' ? Math.round(UNIT_PRICE * 0.75 * 100) / 100 : UNIT_PRICE;
   const totalAmount = quantity * unitPrice;
-  const { level1, level2 } = getAncestors(seller.id);
+  const { level1, level2 } = await getAncestors(seller.id);
 
   // 开启事务
-  const createOrder = db.transaction(() => {
+  const createOrder = db.transaction(async () => {
     // 1. 创建订单
-    const orderResult = db.prepare(`
+    const orderResult = await db.prepare(`
       INSERT INTO orders (seller_id, buyer_name, quantity, unit_price, total_amount, order_type, note)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(seller.id, buyer_name || null, quantity, unitPrice, totalAmount, order_type, note || null);
@@ -138,37 +134,37 @@ router.post('/', authMiddleware, (req, res) => {
       orderId,
     });
 
-    commissions.forEach(c => {
-      db.prepare(`
+    for (const c of commissions) {
+      await db.prepare(`
         INSERT INTO commissions (order_id, member_id, commission_type, rate, amount)
         VALUES (?, ?, ?, ?, ?)
       `).run(c.order_id, c.member_id, c.commission_type, c.rate, c.amount);
 
       // 更新收佣人的累计佣金
-      db.prepare('UPDATE members SET total_commission_earned = total_commission_earned + ? WHERE id = ?')
+      await db.prepare('UPDATE members SET total_commission_earned = total_commission_earned + ? WHERE id = ?')
         .run(c.amount, c.member_id);
-    });
+    }
 
     // 3. 更新 seller 个人销售额（customer_sale 才算个人销售）
     if (order_type === 'customer_sale') {
-      db.prepare('UPDATE members SET total_personal_sales = total_personal_sales + ? WHERE id = ?')
+      await db.prepare('UPDATE members SET total_personal_sales = total_personal_sales + ? WHERE id = ?')
         .run(totalAmount, seller.id);
     }
 
     // 4. 沿链更新 service_sales 并计算阶梯激励
-    const tierCommissions = updateServiceSalesChain(seller.id, totalAmount, orderId);
-    tierCommissions.forEach(c => {
-      db.prepare(`
+    const tierCommissions = await updateServiceSalesChain(seller.id, totalAmount, orderId);
+    for (const c of tierCommissions) {
+      await db.prepare(`
         INSERT INTO commissions (order_id, member_id, commission_type, rate, amount)
         VALUES (?, ?, ?, ?, ?)
       `).run(c.order_id, c.member_id, c.commission_type, c.rate, c.amount);
-      db.prepare('UPDATE members SET total_commission_earned = total_commission_earned + ? WHERE id = ?')
+      await db.prepare('UPDATE members SET total_commission_earned = total_commission_earned + ? WHERE id = ?')
         .run(c.amount, c.member_id);
-    });
+    }
 
     // 5. 升级处理
     if (order_type === 'upgrade') {
-      db.prepare(`
+      await db.prepare(`
         UPDATE members SET level = 'xingyao', upgraded_at = datetime('now','localtime') WHERE id = ?
       `).run(seller.id);
     }
@@ -182,7 +178,7 @@ router.post('/', authMiddleware, (req, res) => {
   });
 
   try {
-    const result = createOrder();
+    const result = await createOrder();
     res.json({ message: '订单创建成功', ...result });
   } catch (err) {
     console.error('创建订单失败：', err);
@@ -191,7 +187,7 @@ router.post('/', authMiddleware, (req, res) => {
 });
 
 // 获取我的订单列表
-router.get('/my', authMiddleware, (req, res) => {
+router.get('/my', authMiddleware, async (req, res) => {
   const { page = 1, pageSize = 20, month = '' } = req.query;
   const offset = (page - 1) * pageSize;
 
@@ -202,8 +198,9 @@ router.get('/my', authMiddleware, (req, res) => {
     params.push(month);
   }
 
-  const total = db.prepare(`SELECT COUNT(*) as cnt FROM orders ${where}`).get(...params).cnt;
-  const orders = db.prepare(`
+  const totalRow = await db.prepare(`SELECT COUNT(*) as cnt FROM orders ${where}`).get(...params);
+  const total = totalRow ? totalRow.cnt : 0;
+  const orders = await db.prepare(`
     SELECT * FROM orders ${where}
     ORDER BY created_at DESC LIMIT ? OFFSET ?
   `).all(...params, pageSize, offset);
@@ -212,7 +209,7 @@ router.get('/my', authMiddleware, (req, res) => {
 });
 
 // 管理员：获取所有订单
-router.get('/', authMiddleware, adminOnly, (req, res) => {
+router.get('/', authMiddleware, adminOnly, async (req, res) => {
   const { page = 1, pageSize = 20, seller_id = '' } = req.query;
   const offset = (page - 1) * pageSize;
 
@@ -223,8 +220,9 @@ router.get('/', authMiddleware, adminOnly, (req, res) => {
     params.push(seller_id);
   }
 
-  const total = db.prepare(`SELECT COUNT(*) as cnt FROM orders o ${where}`).get(...params).cnt;
-  const orders = db.prepare(`
+  const totalRow = await db.prepare(`SELECT COUNT(*) as cnt FROM orders o ${where}`).get(...params);
+  const total = totalRow ? totalRow.cnt : 0;
+  const orders = await db.prepare(`
     SELECT o.*, m.name as seller_name, m.phone as seller_phone
     FROM orders o
     JOIN members m ON o.seller_id = m.id
@@ -236,11 +234,8 @@ router.get('/', authMiddleware, adminOnly, (req, res) => {
 });
 
 // 管理员：手动添加订单（帮会员录入）
-router.post('/admin', authMiddleware, adminOnly, (req, res) => {
-  req.user.id = req.body.seller_id;
-  // 复用同一套逻辑，直接转发给创建逻辑
-  // 简化：管理员以seller_id发起创建
-  const seller = db.prepare('SELECT id FROM members WHERE id = ?').get(req.body.seller_id);
+router.post('/admin', authMiddleware, adminOnly, async (req, res) => {
+  const seller = await db.prepare('SELECT id FROM members WHERE id = ?').get(req.body.seller_id);
   if (!seller) return res.status(404).json({ error: '会员不存在' });
   req.user.id = seller.id;
   // 调用上面的逻辑（通过内部请求复用）

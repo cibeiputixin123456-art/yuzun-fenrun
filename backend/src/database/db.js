@@ -1,65 +1,23 @@
 /**
  * 数据库封装 - 使用 Turso (libsql) 云数据库
- * 提供同步风格 API（通过同步包装异步调用）
+ * 异步 API，所有路由需要 async/await
  */
 const { createClient } = require('@libsql/client');
 
 const client = createClient({
-  url: process.env.TURSO_URL,
+  url: process.env.TURSO_URL || 'file:./data/yuzun.db',
   authToken: process.env.TURSO_TOKEN,
 });
 
-// 同步执行 SQL（阻塞等待）
-function execSync(sql) {
-  const p = client.execute(sql);
-  let done = false, result, error;
-  p.then(r => { result = r; done = true; }).catch(e => { error = e; done = true; });
-  // busy wait（仅用于启动初始化）
-  const start = Date.now();
-  while (!done) {
-    if (Date.now() - start > 10000) throw new Error('DB timeout');
-  }
-  if (error) throw error;
-  return result;
-}
-
-// 包装为 better-sqlite3 兼容的同步 API
-// 注意：Railway 上用 async/await 路由更稳，但这里为兼容现有代码用同步包装
-function runSync(sql, params = []) {
-  let done = false, result, error;
-  client.execute({ sql, args: params })
-    .then(r => { result = r; done = true; })
-    .catch(e => { error = e; done = true; });
-  const start = Date.now();
-  while (!done) { if (Date.now() - start > 10000) throw new Error('DB timeout'); }
-  if (error) throw error;
-  return { lastInsertRowid: result.lastInsertRowid, changes: result.rowsAffected };
-}
-
-function getSync(sql, params = []) {
-  let done = false, result, error;
-  client.execute({ sql, args: params })
-    .then(r => { result = r; done = true; })
-    .catch(e => { error = e; done = true; });
-  const start = Date.now();
-  while (!done) { if (Date.now() - start > 10000) throw new Error('DB timeout'); }
-  if (error) throw error;
-  if (!result.rows || result.rows.length === 0) return undefined;
-  // 转换为普通对象
-  const row = result.rows[0];
+function toObj(result) {
+  if (!result || !result.rows || result.rows.length === 0) return undefined;
   const obj = {};
-  result.columns.forEach((col, i) => { obj[col] = row[i]; });
+  result.columns.forEach((col, i) => { obj[col] = result.rows[0][i]; });
   return obj;
 }
 
-function allSync(sql, params = []) {
-  let done = false, result, error;
-  client.execute({ sql, args: params })
-    .then(r => { result = r; done = true; })
-    .catch(e => { error = e; done = true; });
-  const start = Date.now();
-  while (!done) { if (Date.now() - start > 10000) throw new Error('DB timeout'); }
-  if (error) throw error;
+function toArr(result) {
+  if (!result || !result.rows) return [];
   return result.rows.map(row => {
     const obj = {};
     result.columns.forEach((col, i) => { obj[col] = row[i]; });
@@ -68,32 +26,50 @@ function allSync(sql, params = []) {
 }
 
 const db = {
-  exec: (sql) => {
-    // 拆分多条语句分别执行
+  // 初始化建表
+  async init(sql) {
     const stmts = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
     for (const stmt of stmts) {
-      runSync(stmt, []);
+      await client.execute(stmt);
     }
   },
-  prepare: (sql) => ({
-    run: (...params) => runSync(sql, params.flat()),
-    get: (...params) => getSync(sql, params.flat()),
-    all: (...params) => allSync(sql, params.flat()),
-  }),
-  transaction: (fn) => {
-    return (...args) => {
-      runSync('BEGIN', []);
+
+  prepare(sql) {
+    return {
+      async run(...params) {
+        const args = params.flat();
+        const r = await client.execute({ sql, args });
+        return { lastInsertRowid: Number(r.lastInsertRowid), changes: r.rowsAffected };
+      },
+      async get(...params) {
+        const args = params.flat();
+        const r = await client.execute({ sql, args });
+        return toObj(r);
+      },
+      async all(...params) {
+        const args = params.flat();
+        const r = await client.execute({ sql, args });
+        return toArr(r);
+      },
+    };
+  },
+
+  // 事务
+  transaction(fn) {
+    return async (...args) => {
+      await client.execute('BEGIN');
       try {
-        const result = fn(...args);
-        runSync('COMMIT', []);
+        const result = await fn(...args);
+        await client.execute('COMMIT');
         return result;
       } catch (err) {
-        try { runSync('ROLLBACK', []); } catch {}
+        try { await client.execute('ROLLBACK'); } catch {}
         throw err;
       }
     };
   },
-  client, // 暴露原生 client 供需要时使用
+
+  client,
 };
 
 module.exports = db;
