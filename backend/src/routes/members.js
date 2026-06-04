@@ -14,7 +14,7 @@ router.get('/', authMiddleware, adminOnly, (req, res) => {
     const level = req.query.level || '';
     const offset = (page - 1) * pageSize;
 
-    const conditions = ['role != "admin"'];
+    const conditions = ["role != 'admin'"];
     const params = [];
 
     if (keyword) {
