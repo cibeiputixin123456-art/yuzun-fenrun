@@ -17,6 +17,7 @@ const routes = [
       { path: 'admin/orders', component: () => import('../views/admin/AdminOrders.vue'), meta: { title: '订单管理', admin: true } },
       { path: 'admin/commissions', component: () => import('../views/admin/AdminCommissions.vue'), meta: { title: '收益管理', admin: true } },
       { path: 'admin/stats', component: () => import('../views/admin/Stats.vue'), meta: { title: '数据统计', admin: true } },
+      { path: 'admin/import', component: () => import('../views/admin/ImportOrders.vue'), meta: { title: '导入订单', admin: true } },
     ]
   },
 ]

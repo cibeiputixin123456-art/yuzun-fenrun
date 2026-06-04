@@ -7,14 +7,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.3.0",
+    "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.6.7",
     "element-plus": "^2.6.0",
-    "@element-plus/icons-vue": "^2.3.1"
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "vite": "^5.1.0",
-    "@vitejs/plugin-vue": "^5.0.4"
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.1.0"
   }
 }

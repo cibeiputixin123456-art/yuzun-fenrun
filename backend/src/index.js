@@ -23,6 +23,7 @@ app.use('/api/members', require('./routes/members'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/commissions', require('./routes/commissions'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/import', require('./routes/import'));
 
 // 健康检查
 app.get('/api/health', (req, res) => {

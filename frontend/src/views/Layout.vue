@@ -44,6 +44,9 @@
             <router-link to="/admin/stats" class="nav-item admin-item">
               <span class="nav-icon">📊</span> 数据统计
             </router-link>
+            <router-link to="/admin/import" class="nav-item admin-item">
+              <span class="nav-icon">📥</span> 导入订单
+            </router-link>
           </template>
         </nav>
       </aside>
